@@ -50,3 +50,12 @@ Taskify/
 ├── client/       # React frontend code
 ├── server/       # Node.js backend code
 └── README.md     # Project documentation
+
+
+<img width="737" alt="image" src="https://github.com/user-attachments/assets/87cb4723-6ebc-45ba-b08b-04cae6ec5676" />
+
+<img width="438" alt="image" src="https://github.com/user-attachments/assets/17e1c2ff-8cdb-432f-a10e-cf63642c30a9" />
+
+
+
+
