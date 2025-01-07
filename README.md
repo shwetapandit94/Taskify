@@ -53,7 +53,7 @@ Taskify/
 
 
 Postman images
-![Alt text](<img width="476" alt="image" src="https://github.com/user-attachments/assets/6f71effe-f019-457f-a135-a3c66fee0d62" />)
+![Alt text](https://github.com/user-attachments/assets/be9c8962-fee2-40e2-93e6-c0df7e7ce745)
 
 
 
