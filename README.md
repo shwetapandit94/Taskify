@@ -52,10 +52,6 @@ Taskify/
 └── README.md     # Project documentation
 
 
-Postman images
-![Alt text](https://github.com/user-attachments/assets/be9c8962-fee2-40e2-93e6-c0df7e7ce745)
-
-
 
 
 
