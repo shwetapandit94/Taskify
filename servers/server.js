@@ -1,243 +1,355 @@
-import React, { useState, useEffect } from "react";
-import {
-  getTasks,
-  createTask,
-  updateTask,
-  deleteTask,
-} from "../services/taskService";
-import "./TaskManager.css";
+const express = require("express");
+const mongoose = require("mongoose");
+const bodyParser = require("body-parser");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const swaggerJSDoc = require("swagger-jsdoc");
+const swaggerUi = require("swagger-ui-express");
+// Load environment variables
+dotenv.config();
 
-const TaskManager = () => {
-  const [tasks, setTasks] = useState([]);
-  const [newTask, setNewTask] = useState({
-    title: "",
-    description: "",
-    due_date: "",
-    priority: "",
-    status: "",
-  });
-  const [editTaskId, setEditTaskId] = useState(null);
+const app = express();
 
-  useEffect(() => {
-    fetchTasks();
-  }, []);
+// Middleware
+app.use(cors());
+app.use(bodyParser.json());
 
-  const fetchTasks = async () => {
-    try {
-      const data = await getTasks();
-      setTasks(data);
-    } catch (error) {
-      console.error("Error fetching tasks:", error);
-    }
-  };
+// Connect to MongoDB
+mongoose
+  .connect("mongodb://0.0.0.0:27017/taskify", {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("Connected to MongoDB"))
+  .catch((err) => console.log("MongoDB connection error:", err));
 
-  const handleCreateTask = async () => {
-    if (!newTask.priority || !newTask.status || !newTask.due_date) {
-      alert("Please select valid values for Priority, Status, and Due Date.");
-      return;
-    }
+// Task Schema
+const taskSchema = new mongoose.Schema({
+  title: String,
+  description: String,
+  due_date: Date,
+  priority: {
+    type: String,
+    enum: ["low", "medium", "high"],
+    default: "medium",
+  },
+  status: { type: String, enum: ["pending", "completed"], default: "pending" },
+});
 
-    try {
-      await createTask(newTask);
-      fetchTasks();
-      setNewTask({
-        title: "",
-        description: "",
-        due_date: "",
-        priority: "",
-        status: "",
-      });
-    } catch (error) {
-      console.error("Error creating task:", error);
-    }
-  };
+const Task = mongoose.model("Task", taskSchema);
 
-  const handleUpdateTask = async (id) => {
-    try {
-      const taskToUpdate = tasks.find((task) => task._id === id);
-      await updateTask(id, taskToUpdate);
-      fetchTasks();
-      setEditTaskId(null);
-    } catch (error) {
-      console.error("Error updating task:", error);
-    }
-  };
-
-  const handleDeleteTask = async (id) => {
-    try {
-      await deleteTask(id);
-      fetchTasks();
-    } catch (error) {
-      console.error("Error deleting task:", error);
-    }
-  };
-
-  const handleInputChange = (e, id = null) => {
-    const { name, value } = e.target;
-    if (id) {
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task._id === id ? { ...task, [name]: value } : task
-        )
-      );
-    } else {
-      setNewTask({ ...newTask, [name]: value });
-    }
-  };
-
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case "pending":
-        return "status-pending";
-      case "in-progress":
-        return "status-in-progress";
-      case "completed":
-        return "status-completed";
-      default:
-        return "";
-    }
-  };
-
-  return (
-    <div className="task-manager">
-      <h1>Task Manager</h1>
-
-      {/* Create Task */}
-      <div className="create-task">
-        <h2>Create Task</h2>
-        <input
-          type="text"
-          name="title"
-          placeholder="Title"
-          value={newTask.title}
-          onChange={handleInputChange}
-        />
-        <input
-          type="text"
-          name="description"
-          placeholder="Description"
-          value={newTask.description}
-          onChange={handleInputChange}
-        />
-        <div className="input-with-title-inline">
-          <label htmlFor="due_date" className="input-title">
-            Due Date:
-          </label>
-          <input
-            type="date"
-            id="due_date"
-            name="due_date"
-            value={newTask.due_date}
-            onChange={handleInputChange}
-          />
-        </div>
-
-        <select
-          name="priority"
-          value={newTask.priority}
-          onChange={handleInputChange}
-        >
-          <option value="">Select Priority</option>
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
-        </select>
-        <select
-          name="status"
-          value={newTask.status}
-          onChange={handleInputChange}
-        >
-          <option value="">Select Status</option>
-          <option value="pending">Pending</option>
-          <option value="in-progress">In Progress</option>
-          <option value="completed">Completed</option>
-        </select>
-        <button onClick={handleCreateTask}>Add Task</button>
-      </div>
-
-      {/* Task List */}
-      <div className="task-list">
-        <h2>Tasks</h2>
-        {tasks.map((task) => (
-          <div
-            key={task._id}
-            className={`task-item ${getStatusStyle(task.status)}`}
-          >
-            {editTaskId === task._id ? (
-              <>
-                <input
-                  type="text"
-                  name="title"
-                  value={task.title}
-                  onChange={(e) => handleInputChange(e, task._id)}
-                />
-                <input
-                  type="text"
-                  name="description"
-                  value={task.description}
-                  onChange={(e) => handleInputChange(e, task._id)}
-                />
-                <div className="input-with-title">
-                  <label htmlFor="due_date" className="input-title">
-                    Due Date:
-                  </label>
-                  <input
-                    type="date"
-                    id="due_date"
-                    name="due_date"
-                    value={task.due_date?.slice(0, 10)}
-                    onChange={(e) => handleInputChange(e, task._id)}
-                  />
-                </div>
-                <select
-                  name="priority"
-                  value={task.priority}
-                  onChange={(e) => handleInputChange(e, task._id)}
-                >
-                  <option value="">Select Priority</option>
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-                <select
-                  name="status"
-                  value={task.status}
-                  onChange={(e) => handleInputChange(e, task._id)}
-                >
-                  <option value="">Select Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="in-progress">In Progress</option>
-                  <option value="completed">Completed</option>
-                </select>
-                <button onClick={() => handleUpdateTask(task._id)}>Save</button>
-                <button onClick={() => setEditTaskId(null)}>Cancel</button>
-              </>
-            ) : (
-              <>
-                <h3>{task.title}</h3>
-                <p>{task.description}</p>
-                <p>Due: {new Date(task.due_date).toLocaleDateString()}</p>
-                <p>Priority: {task.priority}</p>
-                <p>Status: {task.status}</p>
-                <button
-                  className="edit-button"
-                  onClick={() => setEditTaskId(task._id)}
-                >
-                  Edit
-                </button>
-                <button
-                  className="delete-button"
-                  onClick={() => handleDeleteTask(task._id)}
-                >
-                  Delete
-                </button>
-              </>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+const options = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "Taskify API",
+      version: "1.0.0",
+      description: "API documentation for Taskify - a task management system.",
+    },
+    servers: [
+      {
+        url: "http://localhost:5000",
+        description: "Local server",
+      },
+    ],
+    paths: {
+      "/tasks": {
+        get: {
+          summary: "Retrieve all tasks",
+          description:
+            "Fetch a list of all tasks with optional filters for status and priority.",
+          parameters: [
+            {
+              name: "status",
+              in: "query",
+              description: "Filter tasks by status (e.g., pending, completed).",
+              required: false,
+              schema: {
+                type: "string",
+              },
+            },
+            {
+              name: "priority",
+              in: "query",
+              description:
+                "Filter tasks by priority (e.g., low, medium, high).",
+              required: false,
+              schema: {
+                type: "string",
+              },
+            },
+          ],
+          responses: {
+            200: {
+              description: "A list of tasks.",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "array",
+                    items: {
+                      $ref: "#/components/schemas/Task",
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        post: {
+          summary: "Create a new task",
+          description:
+            "Add a new task with title, description, due date, priority, and status.",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/TaskInput",
+                },
+              },
+            },
+          },
+          responses: {
+            201: {
+              description: "Task created successfully.",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/Task",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/tasks/{id}": {
+        get: {
+          summary: "Retrieve a specific task",
+          description: "Fetch a task by its unique ID.",
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              description: "ID of the task to retrieve.",
+              schema: {
+                type: "string",
+              },
+            },
+          ],
+          responses: {
+            200: {
+              description: "Task details.",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/Task",
+                  },
+                },
+              },
+            },
+          },
+        },
+        put: {
+          summary: "Update a specific task",
+          description: "Modify details of an existing task.",
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              description: "ID of the task to update.",
+              schema: {
+                type: "string",
+              },
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/TaskInput",
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: "Task updated successfully.",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/Task",
+                  },
+                },
+              },
+            },
+          },
+        },
+        delete: {
+          summary: "Delete a specific task",
+          description: "Remove a task by its unique ID.",
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              description: "ID of the task to delete.",
+              schema: {
+                type: "string",
+              },
+            },
+          ],
+          responses: {
+            204: {
+              description: "Task deleted successfully.",
+            },
+          },
+        },
+      },
+    },
+    components: {
+      schemas: {
+        Task: {
+          type: "object",
+          properties: {
+            _id: {
+              type: "string",
+              description: "Unique identifier for the task.",
+            },
+            title: {
+              type: "string",
+              description: "Title of the task.",
+            },
+            description: {
+              type: "string",
+              description: "Details about the task.",
+            },
+            due_date: {
+              type: "string",
+              format: "date",
+              description: "Due date for the task.",
+            },
+            priority: {
+              type: "string",
+              description: "Priority of the task (low, medium, high).",
+            },
+            status: {
+              type: "string",
+              description: "Current status of the task (pending, completed).",
+            },
+          },
+        },
+        TaskInput: {
+          type: "object",
+          required: ["title", "description", "due_date", "priority", "status"],
+          properties: {
+            title: {
+              type: "string",
+              description: "Title of the task.",
+            },
+            description: {
+              type: "string",
+              description: "Details about the task.",
+            },
+            due_date: {
+              type: "string",
+              format: "date",
+              description: "Due date for the task.",
+            },
+            priority: {
+              type: "string",
+              description: "Priority of the task (low, medium, high).",
+            },
+            status: {
+              type: "string",
+              description: "Current status of the task (pending, completed).",
+            },
+          },
+        },
+      },
+    },
+  },
 };
 
-export default TaskManager;
+// POST /tasks: Create a new task
+app.post("/tasks", async (req, res) => {
+  try {
+    const { title, description, due_date, priority, status } = req.body;
+    const newTask = new Task({
+      title,
+      description,
+      due_date,
+      priority,
+      status: status || "pending",
+    });
+    await newTask.save();
+    res.status(201).json(newTask);
+  } catch (error) {
+    res.status(500).json({ message: "Error creating task" });
+  }
+});
+
+// GET /tasks: Retrieve all tasks (with optional filters like status or priority)
+app.get("/tasks", async (req, res) => {
+  try {
+    const { status, priority } = req.query;
+    const query = {};
+
+    if (status) query.status = status;
+    if (priority) query.priority = priority;
+
+    const tasks = await Task.find(query);
+    res.status(200).json(tasks);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching tasks" });
+  }
+});
+
+// GET /tasks/:id: Retrieve a specific task by ID
+app.get("/tasks/:id", async (req, res) => {
+  try {
+    const task = await Task.findById(req.params.id);
+    if (!task) return res.status(404).json({ message: "Task not found" });
+    res.status(200).json(task);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching task" });
+  }
+});
+
+// PUT /tasks/:id: Update a specific task by ID
+app.put("/tasks/:id", async (req, res) => {
+  try {
+    const { title, description, due_date, priority, status } = req.body;
+    const updatedTask = await Task.findByIdAndUpdate(
+      req.params.id,
+      { title, description, due_date, priority, status },
+      { new: true }
+    );
+
+    if (!updatedTask)
+      return res.status(404).json({ message: "Task not found" });
+    res.status(200).json(updatedTask);
+  } catch (error) {
+    res.status(500).json({ message: "Error updating task" });
+  }
+});
+
+// DELETE /tasks/:id: Delete a specific task by ID
+app.delete("/tasks/:id", async (req, res) => {
+  try {
+    const task = await Task.findByIdAndDelete(req.params.id);
+    if (!task) return res.status(404).json({ message: "Task not found" });
+    res.status(200).json({ message: "Task deleted" });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting task" });
+  }
+});
+
+// Start server
+const port = 5000;
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
