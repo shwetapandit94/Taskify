@@ -5,16 +5,13 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const swaggerJSDoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
-// Load environment variables
 dotenv.config();
 
 const app = express();
 
-// Middleware
 app.use(cors());
 app.use(bodyParser.json());
 
-// Connect to MongoDB
 mongoose
   .connect("mongodb://0.0.0.0:27017/taskify", {
     useNewUrlParser: true,
@@ -291,6 +288,9 @@ app.post("/tasks", async (req, res) => {
     res.status(500).json({ message: "Error creating task" });
   }
 });
+
+const swaggerSpec = swaggerJSDoc(options);
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // GET /tasks: Retrieve all tasks (with optional filters like status or priority)
 app.get("/tasks", async (req, res) => {
